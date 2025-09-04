@@ -22,12 +22,6 @@ function tentamenbank_theme($existing, $type, $theme, $path) {
       ],
       'template' => 'tentamenbank',
     ],
-    'album' => [
-      'variables' => [
-        'images' => [],
-      ],
-      'template' => 'album',
-    ],
     'displays' => [
       'file' => 'tentamenbank.theme.inc',
     ],
