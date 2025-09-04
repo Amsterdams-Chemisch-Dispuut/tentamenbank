@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * Contains theme and help hooks for the TARDIS module.
+ */
+
+ use Drupal\Core\Routing\RouteMatchInterface;
+/**
+ * Implements hook_theme().
+ */
+function tentamenbank_theme($existing, $type, $theme, $path) {
+  return [
+    'tentamenbank_subject' => [
+      'variables' => [
+        'exams' => [],
+      ],
+      'template' => 'tentamenbank_subject',
+    ],
+    'tentamenbank' => [
+      'variables' => [
+        'subjects' => [],
+      ],
+      'template' => 'tentamenbank',
+    ],
+    'album' => [
+      'variables' => [
+        'images' => [],
+      ],
+      'template' => 'album',
+    ],
+    'displays' => [
+      'file' => 'tentamenbank.theme.inc',
+    ],
+  ];
+}
+
+if (\Drupal::hasContainer()) {
+    \Drupal::moduleHandler()->loadInclude('tentamenbank', 'inc', 'tentamenbank.theme');
+}

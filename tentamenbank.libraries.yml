@@ -1,0 +1,6 @@
+tentamenbank:
+  version: 1.x
+  js:
+    js/tentamenbank.js: {}
+  dependencies:
+    - core/jquery

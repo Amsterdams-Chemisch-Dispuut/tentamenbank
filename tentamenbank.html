@@ -1,0 +1,79 @@
+<div class="row mb-3">
+    <div class="col-auto">
+        <div class="btn-group" role="group" aria-label="Study Level">
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Bachelor', this)">Bachelor</button>
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Master', this)">Master</button>
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Pre-master', this)">Pre-master</button>
+        </div>
+    </div>
+    <div class="col">
+        <input type="text" id="search" placeholder="Search..." class="form-control">
+    </div>
+</div>
+
+<table id="subjects" class="table table-hover" style="width: 100%">
+        <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Study</th>
+        </tr>
+    </thead>
+    <tbody>
+<tr onclick="window.location='{{ subject.url }}';" style="cursor:pointer;">                <td>Biochemistry</td>
+            <td>Bachelor</td>
+        </tr>
+        <tr>
+            <td>Molecular Photonics</td>
+            <td>Bachelor</td>
+        </tr>
+        <tr onclick="window.location='{{ subject.url }}';" style="cursor:pointer;">            <td>Advanced Molecular Photonics</td>
+            <td>Master</td>
+        </tr>
+        <tr onclick="window.location='{{ subject.url }}';" style="cursor:pointer;">            <td>Quantum Mechanics</td>
+            <td>Pre-master</td>
+        </tr>
+    </tbody>
+</table>
+
+<script>
+
+function filterTable(level, button) {
+var table, rows, i, study;
+table = document.getElementById("subjects");
+rows = table.getElementsByTagName("tr");
+var searchFilter = document.getElementById('search').value.toLowerCase();
+
+for (i = 1; i < rows.length; i++) {
+    study = rows[i].getElementsByTagName("td")[1];
+    var subject = rows[i].getElementsByTagName("td")[0].textContent.toLowerCase();
+    if (study) {
+        if ((study.textContent === level || level === "") && subject.indexOf(searchFilter) > -1) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
+        }
+    }       
+}
+
+// Update button classes
+var buttons = document.querySelectorAll('.btn-group .btn');
+buttons.forEach(function(btn) {
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-outline-primary');
+});
+button.classList.remove('btn-outline-primary');
+button.classList.add('btn-primary');
+}
+
+document.getElementById('search').addEventListener('input', function() {
+var filter = this.value.toLowerCase();
+var rows = document.querySelectorAll('#subjects tbody tr');
+rows.forEach(function(row) {
+    var subject = row.getElementsByTagName('td')[0].textContent.toLowerCase();
+    if (subject.indexOf(filter) > -1) {
+        row.style.display = '';
+    } else {
+        row.style.display = 'none';
+    }
+});
+});    </script>

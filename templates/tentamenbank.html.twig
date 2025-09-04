@@ -1,0 +1,47 @@
+<div class="row mb-3 ">
+    <div class="col-auto">
+        <div class="btn-group" role="group" aria-label="Study Level">
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Bachelor', this)">Bachelor</button>
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Master', this)">Master</button>
+            <button type="button" class="btn btn-outline-primary" onclick="filterTable('Pre-master', this)">Pre-master</button>
+        </div>
+    </div>
+    <div class="col">
+        <div class="input-group">
+            <input type="text" id="search" placeholder="Search..." class="form-control">
+        </div>
+    </div>
+</div>
+
+<table id="subjects" class="table table-hover" style="width:100%">
+    <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Study</th>
+        </tr>
+    </thead>
+    <tbody id="subjects-body">
+        {% for subject in subjects %}
+        <tr onclick="window.location='{{ subject.url }}';" style="cursor:pointer;">
+            <td>{{ subject.subject }}</td>
+            <td>{{ subject.study }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="pagination">
+    <nav aria-label="Page navigation example">
+        <ul class="pagination">
+            <li class="page-item">
+                <a class="page-link" href="#" id="prevPage" onclick="prevPage()">Previous</a>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link" id="pageInfo"></span>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#" id="nextPage" onclick="nextPage()">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>

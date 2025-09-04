@@ -1,0 +1,33 @@
+<a href=".." class="btn btn-primary">&larr;</a>
+<table id="subjects" class="table" style="width:100%">
+    <thead class="thead-dark">
+        <tr>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Questions</th>
+            <th>Answers</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for exam in exams %}
+        <tr>
+            <th scope="row">{{ exam.type }}</td>
+            <td>{{ exam.date }}</td>
+            <td>
+          {% if exam.questions %}
+            <a href="{{ exam.questions }}" class="btn btn-primary">Questions</a>
+          {% else %}
+            <a class="btn btn-outline-primary">Questions</a>
+          {% endif %}
+        </td>
+        <td>
+          {% if exam.answers %}
+            <a href="{{ exam.answers }}" class="btn btn-primary">Answers</a>
+          {% else %}
+            <a class="btn btn-outline-primary">Answers</a>
+          {% endif %}
+        </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

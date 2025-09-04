@@ -1,0 +1,22 @@
+tentamenbank.tentamenbank_main:
+  path: '/tentamenbank'
+  defaults:
+    _controller: '\Drupal\s3_gallery\Controller\TentamenbankController::mainPage'
+    _title: 'Tentamenbank'
+  requirements:
+    _permission: 'access content'
+
+tentamenbank.tentamenbank_subject:
+  path: '/tentamenbank/{study}/{subject}'
+  defaults:
+    _controller: '\Drupal\s3_gallery\Controller\TentamenbankController::myPage'
+    _title_callback: '\Drupal\s3_gallery\Controller\TentamenbankController::getTitle'
+    prefix: ''
+  requirements:
+    _permission: 'access content'
+    prefix: '.*'
+  options:
+    parameters:
+      prefix:
+        type: 'string'
+        default: ''
