@@ -1,7 +1,7 @@
 tentamenbank.tentamenbank_main:
   path: '/tentamenbank'
   defaults:
-    _controller: '\Drupal\s3_gallery\Controller\TentamenbankController::mainPage'
+    _controller: '\Drupal\tentamenbank\Controller\TentamenbankController::mainPage'
     _title: 'Tentamenbank'
   requirements:
     _permission: 'access content'
@@ -9,8 +9,8 @@ tentamenbank.tentamenbank_main:
 tentamenbank.tentamenbank_subject:
   path: '/tentamenbank/{study}/{subject}'
   defaults:
-    _controller: '\Drupal\s3_gallery\Controller\TentamenbankController::myPage'
-    _title_callback: '\Drupal\s3_gallery\Controller\TentamenbankController::getTitle'
+    _controller: '\Drupal\tentamenbank\Controller\TentamenbankController::myPage'
+    _title_callback: '\Drupal\tentamenbank\Controller\TentamenbankController::getTitle'
     prefix: ''
   requirements:
     _permission: 'access content'

@@ -4,4 +4,5 @@
 cd ~/stack/drupal/modules/custom/tentamenbank
 git pull
 cd ~/stack/drupal
-drush cr```
+drush cr
+```
