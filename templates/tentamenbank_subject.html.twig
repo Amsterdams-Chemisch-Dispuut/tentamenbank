@@ -15,14 +15,14 @@
             <td>{{ exam.date }}</td>
             <td>
           {% if exam.questions %}
-            <a href="{{ exam.questions }}" class="btn btn-primary">Questions</a>
+            <a href="https://acdweb-storage.s3.eu-central-1.amazonaws.com/{{ exam.questions }}" class="btn btn-primary">Questions</a>
           {% else %}
             <a class="btn btn-outline-primary">Questions</a>
           {% endif %}
         </td>
         <td>
           {% if exam.answers %}
-            <a href="{{ exam.answers }}" class="btn btn-primary">Answers</a>
+            <a href="https://acdweb-storage.s3.eu-central-1.amazonaws.com/{{ exam.answers }}" class="btn btn-primary">Answers</a>
           {% else %}
             <a class="btn btn-outline-primary">Answers</a>
           {% endif %}
