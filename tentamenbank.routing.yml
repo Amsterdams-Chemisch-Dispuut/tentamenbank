@@ -20,3 +20,11 @@ tentamenbank.tentamenbank_subject:
       prefix:
         type: 'string'
         default: ''
+
+tentamenbank.mapping:
+  path: '/admin/config/tentamenbank'
+  defaults:
+    _form: '\Drupal\tentamenbank\Form\CourseMappingForm'
+    _title: 'Tentamenbank Course IDs'
+  requirements:
+    _permission: 'administer site configuration'

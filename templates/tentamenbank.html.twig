@@ -17,6 +17,7 @@
     <thead>
         <tr>
             <th>Subject</th>
+            <th>Course ID</th>
             <th>Study</th>
         </tr>
     </thead>
@@ -24,6 +25,13 @@
         {% for subject in subjects %}
         <tr onclick="window.location='{{ subject.url }}';" style="cursor:pointer;">
             <td>{{ subject.subject }}</td>
+            <td>
+                {% if subject.course_id %}
+                    {{ subject.course_id }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
             <td>{{ subject.study }}</td>
         </tr>
         {% endfor %}

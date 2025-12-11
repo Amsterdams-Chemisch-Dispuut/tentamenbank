@@ -16,10 +16,10 @@ class TentamenbankController extends ControllerBase {
    * Returns the title for the gallery pages.
    *
    * @param string|null $prefix
-   *   The prefix for the S3 objects.
+   * The prefix for the S3 objects.
    *
    * @return string
-   *   The title for the gallery page.
+   * The title for the gallery page.
    */
   public function getTitle($study = '', $subject = '') {
     return $subject;
@@ -29,16 +29,18 @@ class TentamenbankController extends ControllerBase {
    * Returns the main gallery page.
    *
    * @return array
-   *   A renderable array.
+   * A renderable array.
    */
   public function mainPage() {
     // Require user to be logged in
-    if (\Drupal::currentUser()->isAnonymous()) {
-      return [
-        '#markup' => t('Access denied. Please log in to view this page.'),
-        '#cache' => ['max-age' => 0],
-      ];
-    }
+/**
+* if (\Drupal::currentUser()->isAnonymous()) {
+* return [
+* '#markup' => t('Access denied. Please log in to view this page.'),
+* '#cache' => ['max-age' => 0],
+* ];
+* }
+*/
     try {
       // Retrieve AWS S3 configuration from settings.php
       $config = Settings::get('aws_s3');
@@ -84,19 +86,19 @@ class TentamenbankController extends ControllerBase {
    * Returns a gallery page.
    *
    * @param string|null $prefix
-   *   The prefix for the S3 objects.
+   * The prefix for the S3 objects.
    *
    * @return array
-   *   A renderable array.
+   * A renderable array.
    */
   public function myPage($study = '', $subject = '') {
-    // Require user to be logged in
+/** // Require user to be logged in
     if (\Drupal::currentUser()->isAnonymous()) {
       return [
         '#markup' => t('Access denied. Please log in to view this page.'),
         '#cache' => ['max-age' => 0],
       ];
-    }
+    }*/
     try {
       // Retrieve AWS S3 configuration from settings.php
       $config = Settings::get('aws_s3');
@@ -137,7 +139,14 @@ class TentamenbankController extends ControllerBase {
     }
   }
 
-  private function homePage($contents) { 
+private function homePage($contents) { 
+    // 1. Load Data
+    $mapping_file = 'public://tentamenbank_course_ids.json';
+    $mapping_data = [];
+    if (file_exists($mapping_file)) {
+      $mapping_data = json_decode(file_get_contents($mapping_file), TRUE);
+    }
+
     $result = [];
       if (isset($contents['Contents'])) {
         $uniqueKeys = [];
@@ -153,9 +162,37 @@ class TentamenbankController extends ControllerBase {
                     $study = $splitKey[1];
                     $subject = $splitKey[2];
                     $url = "/tentamenbank/" . $study . "/" . $subject;
+                    
+                    // --- CHANGED LOGIC START ---
+                    
+                    // Decode key for lookup
+                    $lookup_key = htmlspecialchars_decode($subject);
+                    $stored = $mapping_data[$lookup_key] ?? $mapping_data[$subject] ?? null;
+
+                    // Initialize defaults
+                    $cid = '';
+                    $displayName = $subject; // Default to folder name
+
+                    // Check if we have data (handle both old string format and new array format)
+                    if ($stored) {
+                        if (is_array($stored)) {
+                            // New format: ['id' => '...', 'name' => '...']
+                            $cid = $stored['id'] ?? '';
+                            if (!empty($stored['name'])) {
+                                $displayName = $stored['name'];
+                            }
+                        } else {
+                            // Old format: Simple string ID
+                            $cid = $stored;
+                        }
+                    }
+                    // --- CHANGED LOGIC END ---
+
                     $result[] = [
                         'study' => $study,
-                        'subject' => $subject,
+                        'subject' => $displayName, // <--- Now uses the custom name if set
+                        'original_subject' => $subject, // Keep original in case you need it
+                        'course_id' => $cid,
                         'url' => $url,
                     ];
                 }
