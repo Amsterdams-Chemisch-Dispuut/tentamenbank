@@ -42,14 +42,152 @@
     <nav aria-label="Page navigation example">
         <ul class="pagination">
             <li class="page-item">
-                <a class="page-link" href="#" id="prevPage" onclick="prevPage()">Previous</a>
+                <a class="page-link" href="javascript:void(0)" id="prevPage" onclick="changePage(-1)">Previous</a>
             </li>
             <li class="page-item disabled">
                 <span class="page-link" id="pageInfo"></span>
             </li>
             <li class="page-item">
-                <a class="page-link" href="#" id="nextPage" onclick="nextPage()">Next</a>
+                <a class="page-link" href="javascript:void(0)" id="nextPage" onclick="changePage(1)">Next</a>
             </li>
         </ul>
     </nav>
 </div>
+
+<style>
+    .btn-check:focus + .btn, .btn:focus {
+        box-shadow: none;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    renderTable();
+
+    document.getElementById('search').addEventListener('keyup', function(e) {
+        currentSearch = e.target.value.toLowerCase();
+        currentPage = 1; 
+        renderTable();
+    });
+});
+
+// --- State Variables ---
+let currentStudyFilter = null; 
+let currentSearch = '';
+let currentPage = 1;
+const rowsPerPage = 10; 
+
+// --- 1. Filter Button Handler ---
+function filterTable(studyLevel, btnElement) {
+    // Check if we are clicking the currently active button
+    // We check classList for 'btn-primary' to see if it's "on"
+    const isActive = btnElement.classList.contains('btn-primary');
+
+    if (isActive) {
+        // Turn OFF: Revert to outline, clear filter
+        currentStudyFilter = null;
+        btnElement.classList.remove('btn-primary');
+        btnElement.classList.add('btn-outline-primary');
+        // We do NOT add the 'active' class
+    } else {
+        // Turn ON: Set filter
+        currentStudyFilter = studyLevel;
+        
+        // 1. Reset ALL buttons in this group to 'Outline' style
+        const group = btnElement.parentElement;
+        const allBtns = group.querySelectorAll('.btn');
+        allBtns.forEach(btn => {
+            btn.classList.remove('btn-primary');       // Remove solid color
+            btn.classList.remove('active');            // Remove "pressed" look
+            btn.classList.add('btn-outline-primary');  // Add outline
+        });
+
+        // 2. Set THIS button to 'Solid' style (looks like hover)
+        btnElement.classList.remove('btn-outline-primary');
+        btnElement.classList.add('btn-primary');
+    }
+
+    // Force button blur to remove the focus ring immediately after click (optional preference)
+    btnElement.blur();
+
+    currentPage = 1; 
+    renderTable();
+}
+
+// --- 2. Pagination Handler ---
+function changePage(direction) {
+    const validRows = getFilteredRows();
+    const totalPages = Math.ceil(validRows.length / rowsPerPage) || 1;
+    const newPage = currentPage + direction;
+
+    if (newPage > 0 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderTable();
+    }
+}
+
+// --- 3. Helper: Get Filtered Rows ---
+function getFilteredRows() {
+    const tableBody = document.getElementById('subjects-body');
+    const allRows = Array.from(tableBody.querySelectorAll('tr'));
+
+    return allRows.filter(row => {
+        const cells = row.getElementsByTagName('td');
+        
+        // 0 = Subject, 1 = Course ID, 2 = Study
+        const subjectText  = cells[0].textContent.toLowerCase();
+        const courseIdText = cells[1].textContent.toLowerCase();
+        const studyText    = cells[2].textContent.toLowerCase();
+
+        // A. Button Filter -> Checks Study Column (2)
+        let matchesStudy = true;
+        if (currentStudyFilter) {
+            matchesStudy = studyText.includes(currentStudyFilter.toLowerCase());
+        }
+
+        // B. Search Filter -> Checks Subject (0) and Course ID (1)
+        let matchesSearch = true;
+        if (currentSearch) {
+            matchesSearch = subjectText.includes(currentSearch) || 
+                            courseIdText.includes(currentSearch);
+        }
+
+        return matchesStudy && matchesSearch;
+    });
+}
+
+// --- 4. Render Function ---
+function renderTable() {
+    const tableBody = document.getElementById('subjects-body');
+    const allRows = Array.from(tableBody.querySelectorAll('tr'));
+    
+    const validRows = getFilteredRows();
+    
+    // Hide all
+    allRows.forEach(row => row.style.display = 'none');
+
+    // Pagination
+    const totalPages = Math.ceil(validRows.length / rowsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+
+    // Show current page rows
+    const rowsToShow = validRows.slice(startIndex, endIndex);
+    rowsToShow.forEach(row => row.style.display = '');
+
+    // Update UI
+    document.getElementById('pageInfo').innerText = `Page ${currentPage} of ${totalPages}`;
+
+    const prevBtn = document.getElementById('prevPage').parentElement;
+    const nextBtn = document.getElementById('nextPage').parentElement;
+
+    if (currentPage === 1) prevBtn.classList.add('disabled');
+    else prevBtn.classList.remove('disabled');
+
+    if (currentPage === totalPages) nextBtn.classList.add('disabled');
+    else nextBtn.classList.remove('disabled');
+}
+</script>
