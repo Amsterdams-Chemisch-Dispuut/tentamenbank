@@ -25,6 +25,6 @@ tentamenbank.mapping:
   path: '/admin/config/tentamenbank'
   defaults:
     _form: '\Drupal\tentamenbank\Form\CourseMappingForm'
-    _title: 'Tentamenbank Course IDs'
+    _title: 'Tentamenbank'
   requirements:
     _permission: 'administer site configuration'

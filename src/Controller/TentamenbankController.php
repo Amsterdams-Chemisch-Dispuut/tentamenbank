@@ -5,44 +5,27 @@ namespace Drupal\tentamenbank\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Aws\S3\S3Client;
 use Drupal\Core\Site\Settings;
+use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * Provides route responses for the S3 Gallery module.
- */
 class TentamenbankController extends ControllerBase {
 
-  /**
-   * Returns the title for the gallery pages.
-   *
-   * @param string|null $prefix
-   * The prefix for the S3 objects.
-   *
-   * @return string
-   * The title for the gallery page.
-   */
   public function getTitle($study = '', $subject = '') {
     return $subject;
   }
 
-  /**
-   * Returns the main gallery page.
-   *
-   * @return array
-   * A renderable array.
-   */
   public function mainPage() {
-    // Require user to be logged in
-/**
-* if (\Drupal::currentUser()->isAnonymous()) {
-* return [
-* '#markup' => t('Access denied. Please log in to view this page.'),
-* '#cache' => ['max-age' => 0],
-* ];
-* }
-*/
+    // 1. Get User & Student Number
+    $user = \Drupal::currentUser();
+    $account = User::load($user->id());
+    $student_number = '';
+
+    if ($account && $account->hasField('field_uva_studentnummer') && !$account->get('field_uva_studentnummer')->isEmpty()) {
+        $student_number = $account->get('field_uva_studentnummer')->value;
+    }
+
+    // 2. Get S3 Data
     try {
-      // Retrieve AWS S3 configuration from settings.php
       $config = Settings::get('aws_s3');
       $s3 = new S3Client([
         'version' => 'latest',
@@ -53,54 +36,47 @@ class TentamenbankController extends ControllerBase {
         ],
       ]);
 
-      $bucket = 'acdweb-storage';
-      $prefix = 'tentamenbank/'; // Ensure 'photos/' is prefixed and decode the prefix
       $contents = $s3->listObjectsV2([
-        'Bucket' => $bucket,
-        'Prefix' => $prefix,
+        'Bucket' => 'acdweb-storage',
+        'Prefix' => 'tentamenbank/',
       ]);
 
-      $result = $this->homePage($contents);
-
-
-
-      return [
-        '#theme' => 'tentamenbank',
-        '#subjects' => $result,
-        '#attached' => [
-          'library' => [
-            'tentamenbank/tentamenbank',
-          ],
-        ],
-      ];
+      $all_subjects = $this->homePage($contents);
     } catch (\Exception $e) {
-      // Debugging information
-      \Drupal::logger('tentamenbank')->error('Error: @error', ['@error' => $e->getMessage()]);
-      return [
-        '#markup' => "Error: " . $e->getMessage(),
-      ];
+      \Drupal::logger('tentamenbank')->error('S3 Error: @error', ['@error' => $e->getMessage()]);
+      return ['#markup' => "S3 Error: " . $e->getMessage()];
     }
+
+    // 3. Get Enrolled Courses
+    $my_courses = [];
+    $enrolled_ids = [];
+
+    if (!empty($student_number)) {
+        $enrolled_ids = $this->getEnrolledCourses($student_number);
+
+        foreach ($all_subjects as $subject) {
+            // Normalize: remove spaces, uppercase
+            $s3_id = strtoupper(trim($subject['course_id']));
+            
+            if (!empty($s3_id) && in_array($s3_id, $enrolled_ids)) {
+                $my_courses[] = $subject;
+            }
+        }
+    }
+
+    return [
+      '#theme' => 'tentamenbank',
+      '#subjects' => $all_subjects,
+      '#my_courses' => $my_courses,
+      '#student_id' => $student_number, // <--- Passed to Twig here
+      '#attached' => [
+        'library' => ['tentamenbank/tentamenbank'],
+      ],
+    ];
   }
 
-  /**
-   * Returns a gallery page.
-   *
-   * @param string|null $prefix
-   * The prefix for the S3 objects.
-   *
-   * @return array
-   * A renderable array.
-   */
   public function myPage($study = '', $subject = '') {
-/** // Require user to be logged in
-    if (\Drupal::currentUser()->isAnonymous()) {
-      return [
-        '#markup' => t('Access denied. Please log in to view this page.'),
-        '#cache' => ['max-age' => 0],
-      ];
-    }*/
     try {
-      // Retrieve AWS S3 configuration from settings.php
       $config = Settings::get('aws_s3');
       $s3 = new S3Client([
         'version' => 'latest',
@@ -110,37 +86,65 @@ class TentamenbankController extends ControllerBase {
           'secret' => $config['secret'],
         ],
       ]);
-
-      $bucket = 'acdweb-storage';
-      $prefix = 'tentamenbank/' . urldecode($study) . '/' . urldecode($subject); // Ensure 'photos/' is prefixed and decode the prefix
       $contents = $s3->listObjectsV2([
-        'Bucket' => $bucket,
-        'Prefix' => $prefix,
+        'Bucket' => 'acdweb-storage',
+        'Prefix' => 'tentamenbank/' . urldecode($study) . '/' . urldecode($subject),
       ]);
-
       $exams = $this->tentamensPage($contents);
-      
-      
       return [
         '#theme' => 'tentamenbank_subject',
         '#exams' => $exams,
-        '#attached' => [
-          'library' => [
-            'tentamenbank/tentamenbank',
-          ],
-        ],
+        '#attached' => ['library' => ['tentamenbank/tentamenbank']],
       ];
     } catch (\Exception $e) {
-      // Debugging information
       \Drupal::logger('tentamenbank')->error('Error: @error', ['@error' => $e->getMessage()]);
-      return [
-        '#markup' => "Error: " . $e->getMessage(),
-      ];
+      return ['#markup' => "Error: " . $e->getMessage()];
     }
   }
 
-private function homePage($contents) { 
-    // 1. Load Data
+  private function getEnrolledCourses($student_number) {
+    try {
+        $client = \Drupal::httpClient();
+        $url = 'https://api.datanose.nl/Enrolments/' . $student_number;
+        
+        $response = $client->request('GET', $url, [
+            'timeout' => 5,
+            'headers' => ['Accept' => 'application/json, application/xml']
+        ]);
+        
+        $body = (string) $response->getBody();
+        if (empty($body)) return [];
+
+        $ids = [];
+
+        // ATTEMPT 1: JSON
+        $json = json_decode($body, TRUE);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+             foreach ($json as $entry) {
+                 if (isset($entry['CatalogNumber'])) $ids[] = strtoupper(trim($entry['CatalogNumber']));
+             }
+        } 
+        // ATTEMPT 2: XML
+        else {
+             libxml_use_internal_errors(TRUE);
+             $xml = simplexml_load_string($body);
+             if ($xml && isset($xml->EnrolmentEntry)) {
+                 foreach ($xml->EnrolmentEntry as $entry) {
+                     $ids[] = strtoupper(trim((string)$entry->CatalogNumber));
+                 }
+             }
+             libxml_clear_errors();
+        }
+
+        return array_unique($ids);
+
+    } catch (\Exception $e) {
+        \Drupal::logger('tentamenbank')->error('API Error: @error', ['@error' => $e->getMessage()]);
+        return [];
+    }
+  }
+
+  private function homePage($contents) { 
     $mapping_file = 'public://tentamenbank_course_ids.json';
     $mapping_data = [];
     if (file_exists($mapping_file)) {
@@ -148,7 +152,7 @@ private function homePage($contents) {
     }
 
     $result = [];
-      if (isset($contents['Contents'])) {
+    if (isset($contents['Contents'])) {
         $uniqueKeys = [];
         foreach ($contents['Contents'] as $content) {
             $key = htmlspecialchars($content['Key']);
@@ -163,35 +167,24 @@ private function homePage($contents) {
                     $subject = $splitKey[2];
                     $url = "/tentamenbank/" . $study . "/" . $subject;
                     
-                    // --- CHANGED LOGIC START ---
-                    
-                    // Decode key for lookup
                     $lookup_key = htmlspecialchars_decode($subject);
                     $stored = $mapping_data[$lookup_key] ?? $mapping_data[$subject] ?? null;
 
-                    // Initialize defaults
                     $cid = '';
-                    $displayName = $subject; // Default to folder name
+                    $displayName = $subject; 
 
-                    // Check if we have data (handle both old string format and new array format)
                     if ($stored) {
                         if (is_array($stored)) {
-                            // New format: ['id' => '...', 'name' => '...']
                             $cid = $stored['id'] ?? '';
-                            if (!empty($stored['name'])) {
-                                $displayName = $stored['name'];
-                            }
+                            if (!empty($stored['name'])) $displayName = $stored['name'];
                         } else {
-                            // Old format: Simple string ID
                             $cid = $stored;
                         }
                     }
-                    // --- CHANGED LOGIC END ---
 
                     $result[] = [
                         'study' => $study,
-                        'subject' => $displayName, // <--- Now uses the custom name if set
-                        'original_subject' => $subject, // Keep original in case you need it
+                        'subject' => $displayName,
                         'course_id' => $cid,
                         'url' => $url,
                     ];
@@ -199,13 +192,11 @@ private function homePage($contents) {
             }
         }
     }
-
-      return $result;
+    return $result;
   }
 
   private function tentamensPage($contents) {
     $exams = [];
-
     if (isset($contents['Contents'])) {
       foreach ($contents['Contents'] as $content) {
           $key = htmlspecialchars($content['Key']);
@@ -217,7 +208,6 @@ private function homePage($contents) {
             $sorting = $date->format('Y-m-d');
             $date = $date->format('d M Y');
             $type = $matches[2];
-            $title = $matches[3];
 
             if (!isset($exams[$date])) {
               $exams[$date] = [
@@ -227,27 +217,17 @@ private function homePage($contents) {
                   'questions' => '',
                   'answers' => '',
               ];
+            }
+            if ($type == 'Answers') {
+                $exams[$date]['answers'] = $key;
+            } else {
+                $exams[$date]['questions'] = $key;
+                $exams[$date]['type'] = $type;
+            }
           }
-          if ($type == 'Answers') {
-              $exams[$date]['answers'] = $key;
-          } else {
-              $exams[$date]['questions'] = $key;
-              $exams[$date]['type'] = $type;
-          }
-
-          
       }
+    }
+    usort($exams, function($a, $b) { return strcmp($b['sorting'], $a['sorting']); });
+    return $exams;
   }
-
-  usort($exams, function($a, $b) {
-    return strcmp($b['sorting'], $a['sorting']);
-  });
-
-
-  
-
-
-  return $exams;
-  }
-}
 }
