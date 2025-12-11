@@ -37,7 +37,7 @@ class TentamenbankController extends ControllerBase {
       ]);
 
       $contents = $s3->listObjectsV2([
-        'Bucket' => 'acdweb-storage',
+        'Bucket' => $config['bucket'],
         'Prefix' => 'tentamenbank/',
       ]);
 
@@ -87,7 +87,7 @@ class TentamenbankController extends ControllerBase {
         ],
       ]);
       $contents = $s3->listObjectsV2([
-        'Bucket' => 'acdweb-storage',
+        'Bucket' => $config['bucket'],
         'Prefix' => 'tentamenbank/' . urldecode($study) . '/' . urldecode($subject),
       ]);
       $exams = $this->tentamensPage($contents);

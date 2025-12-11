@@ -112,7 +112,7 @@ class CourseMappingForm extends FormBase {
           'secret' => $config['secret'],
         ],
       ]);
-      $bucket = 'acdweb-storage';
+      $bucket = $config['bucket'];
       $prefix = 'tentamenbank/';
       $contents = $s3->listObjectsV2(['Bucket' => $bucket, 'Prefix' => $prefix]);
       $found = [];
