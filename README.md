@@ -1,8 +1,6 @@
 # tentamenbank
 
 ```bash
-cd ~/stack/drupal/modules/custom/tentamenbank
-git pull
-cd ~/stack/drupal
-drush cr
+git -C ~/stack/drupal/modules/custom/tentamenbank pull
+cd ~/stack/drupal && drush cr
 ```
