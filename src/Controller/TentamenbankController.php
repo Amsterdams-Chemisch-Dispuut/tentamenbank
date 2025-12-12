@@ -72,6 +72,10 @@ class TentamenbankController extends ControllerBase {
       '#attached' => [
         'library' => ['tentamenbank/tentamenbank'],
       ],
+      '#cache' => [
+        'contexts' => ['user'],
+        'tags' => ['user:' .$user->id()],
+      ]
     ];
   }
 
