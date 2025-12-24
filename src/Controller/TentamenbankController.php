@@ -15,6 +15,14 @@ class TentamenbankController extends ControllerBase {
   }
 
   public function mainPage() {
+    // 0. ACCESS CHECK: Only logged-in users
+    if (\Drupal::currentUser()->isAnonymous()) {
+      return [
+        '#markup' => $this->t('Access denied. Please <a href="https://acdweb.nl/user/login">log in</a> to view this page.'),
+        '#cache' => ['max-age' => 0],
+      ];
+    }
+
     // 1. Get User & Student Number
     $user = \Drupal::currentUser();
     $account = User::load($user->id());
@@ -68,7 +76,7 @@ class TentamenbankController extends ControllerBase {
       '#theme' => 'tentamenbank',
       '#subjects' => $all_subjects,
       '#my_courses' => $my_courses,
-      '#student_id' => $student_number, // <--- Passed to Twig here
+      '#student_id' => $student_number, 
       '#attached' => [
         'library' => ['tentamenbank/tentamenbank'],
       ],
@@ -80,6 +88,14 @@ class TentamenbankController extends ControllerBase {
   }
 
   public function myPage($study = '', $subject = '') {
+    // 0. ACCESS CHECK: Only logged-in users
+    if (\Drupal::currentUser()->isAnonymous()) {
+      return [
+        '#markup' => $this->t('Access denied. Please log in to view this page.'),
+        '#cache' => ['max-age' => 0],
+      ];
+    }
+
     try {
       $config = Settings::get('aws_s3');
       $s3 = new S3Client([
@@ -106,6 +122,8 @@ class TentamenbankController extends ControllerBase {
     }
   }
 
+  // ... (Helper functions getEnrolledCourses, homePage, tentamensPage remain unchanged) ...
+  
   private function getEnrolledCourses($student_number) {
     try {
         $client = \Drupal::httpClient();
