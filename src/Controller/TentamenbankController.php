@@ -7,6 +7,8 @@ use Aws\S3\S3Client;
 use Drupal\Core\Site\Settings;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class TentamenbankController extends ControllerBase {
 
@@ -17,10 +19,11 @@ class TentamenbankController extends ControllerBase {
   public function mainPage() {
     // 0. ACCESS CHECK: Only logged-in users
     if (\Drupal::currentUser()->isAnonymous()) {
-      return [
-        '#markup' => $this->t('Access denied. Please <a href="https://acdweb.nl/user/login">log in</a> to view this page.'),
-        '#cache' => ['max-age' => 0],
-      ];
+      $login_url = Url::fromRoute('user.login', [], [
+        'query' => \Drupal::destination()->getAsArray(),
+      ]);
+
+      return new RedirectResponse($login_url->toString());
     }
 
     // 1. Get User & Student Number
@@ -90,10 +93,11 @@ class TentamenbankController extends ControllerBase {
   public function myPage($study = '', $subject = '') {
     // 0. ACCESS CHECK: Only logged-in users
     if (\Drupal::currentUser()->isAnonymous()) {
-      return [
-        '#markup' => $this->t('Access denied. Please log in to view this page.'),
-        '#cache' => ['max-age' => 0],
-      ];
+      $login_url = Url::fromRoute('user.login', [], [
+        'query' => \Drupal::destination()->getAsArray(),
+      ]);
+
+      return new RedirectResponse($login_url->toString());
     }
 
     try {
