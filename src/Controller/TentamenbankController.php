@@ -221,7 +221,7 @@ class TentamenbankController extends ControllerBase {
     return $result;
   }
 
-  private function tentamensPage($contents) {
+private function tentamensPage($contents) {
     $exams = [];
     if (isset($contents['Contents'])) {
       foreach ($contents['Contents'] as $content) {
@@ -229,26 +229,37 @@ class TentamenbankController extends ControllerBase {
           $splitKey = explode('/', trim($key, '/'));
           $lastElement = end($splitKey);
 
-          if (preg_match('/^(\d{4}-\d{2}-\d{2})_(.*)_(.*)\.pdf$/', $lastElement, $matches)) {
+          // UPDATED: Regex now matches .pdf OR .zip (case-insensitive)
+          // Group 1: Date, Group 2: Type, Group 3: Suffix, Group 4: Extension
+          if (preg_match('/^(\d{4}-\d{2}-\d{2})_(.*)_(.*)\.(pdf|zip)$/i', $lastElement, $matches)) {
             $date = date_create(implode('', explode('-', $matches[1])));
             $sorting = $date->format('Y-m-d');
-            $date = $date->format('d M Y');
+            $displayDate = $date->format('d M Y');
+            
             $type = $matches[2];
+            $extension = strtolower($matches[4]);
 
-            if (!isset($exams[$date])) {
-              $exams[$date] = [
+            if (!isset($exams[$displayDate])) {
+              $exams[$displayDate] = [
                   'sorting' => $sorting,
-                  'date' => $date,
+                  'date' => $displayDate,
                   'type' => '',
                   'questions' => '',
+                  'questions_label' => 'Questions', // Default label
                   'answers' => '',
               ];
             }
+
             if ($type == 'Answers') {
-                $exams[$date]['answers'] = $key;
+                $exams[$displayDate]['answers'] = $key;
             } else {
-                $exams[$date]['questions'] = $key;
-                $exams[$date]['type'] = $type;
+                $exams[$displayDate]['questions'] = $key;
+                $exams[$displayDate]['type'] = $type;
+
+                // Check extension to update the label
+                if ($extension === 'zip') {
+                    $exams[$displayDate]['questions_label'] = 'Questions (zip)';
+                }
             }
           }
       }
